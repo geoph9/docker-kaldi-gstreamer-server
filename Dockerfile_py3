@@ -2,7 +2,7 @@ FROM debian:9
 
 RUN apt-get update && apt-get upgrade
 
-RUN apt-get install build-essential \
+RUN apt-get install -y build-essential \
     zlib1g-dev \
     libncurses5-dev \
     libgdbm-dev \
@@ -62,7 +62,8 @@ RUN cd /opt && \
     sed -i '/-g # -O0 -DKALDI_PARANOID/c\-O3 -DNDEBUG' kaldi.mk && \
     make depend && make && \
     cd /opt/kaldi/src/online && make depend && make && \
-    cd /opt/kaldi/src/gst-plugin && make depend && make
+    cd /opt/kaldi/src/gst-plugin && make depend && make && \
+    rm -rf /opt/kaldi/.git
 
 
 RUN cd /opt && \
@@ -72,7 +73,6 @@ RUN cd /opt && \
     make depend && make && \
     rm -rf /opt/gst-kaldi-nnet2-online/.git/ && \
     find /opt/gst-kaldi-nnet2-online/src/ -type f -not -name '*.so' -delete && \
-    rm -rf /opt/kaldi/.git && \
     rm -rf /opt/kaldi/egs/ /opt/kaldi/windows/ /opt/kaldi/misc/ && \
     find /opt/kaldi/src/ -type f -not -name '*.so' -delete && \
     find /opt/kaldi/tools/ -type f \( -not -name '*.so' -and -not -name '*.so*' \) -delete
@@ -90,3 +90,8 @@ RUN chmod +x /opt/start.sh && \
 RUN pip install futures
 
 WORKDIR /opt
+
+RUN mkdir -p /opt/models
+
+COPY kaldi_model/* /opt/models
+COPY yaml_files/kaldi_nnet3.yaml /opt/models
