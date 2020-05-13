@@ -34,6 +34,7 @@ RUN apt-get install -y  \
     python3-yaml \
     python3-simplejson \
     python3-gi \
+    python2.7 \
     subversion \
     wget \
     zlib1g-dev && \
