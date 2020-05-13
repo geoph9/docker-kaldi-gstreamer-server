@@ -83,7 +83,7 @@ RUN mkdir -p /opt/models
 COPY kaldi_model/* /opt/models
 COPY yaml_files/kaldi_nnet3.yaml /opt/models
 
-ENTRYPOINT ["/bin/bash", "-c", "/opt/start.sh"]
+ENTRYPOINT ["/bin/bash", "-c", "/opt/start.sh -y /opt/models/kaldi_nnet3.yaml"]
 
 # To build image (change kaldi_gstreamer_server with any name you like):
 #   docker build -t kaldi_gstreamer_server:latest .

@@ -1,0 +1,92 @@
+FROM debian:9
+
+RUN apt-get update && apt-get upgrade
+
+RUN apt-get install build-essential \
+    zlib1g-dev \
+    libncurses5-dev \
+    libgdbm-dev \
+    libnss3-dev \
+    libssl-dev \
+    libreadline-dev \
+    libffi-dev \
+    wget
+
+
+RUN apt-get install -y  \
+    autoconf \
+    automake \
+    bzip2 \
+    g++ \
+    git \
+    gstreamer1.0-plugins-good \
+    gstreamer1.0-tools \
+    gstreamer1.0-pulseaudio \
+    gstreamer1.0-plugins-bad \
+    gstreamer1.0-plugins-base \
+    gstreamer1.0-plugins-ugly  \
+    libatlas3-base \
+    libgstreamer1.0-dev \
+    libtool-bin \
+    make \
+    python3 \
+    python3-pip \
+    python3-yaml \
+    python3-simplejson \
+    python3-gi \
+    subversion \
+    wget \
+    zlib1g-dev && \
+    apt-get clean autoclean && \
+    apt-get autoremove -y && \
+    pip install tornado && \
+    ln -s /usr/bin/python3 /usr/bin/python ; ln -s -f bash /bin/sh
+
+
+RUN cd /opt && wget http://www.digip.org/jansson/releases/jansson-2.7.tar.bz2 && \
+    bunzip2 -c jansson-2.7.tar.bz2 | tar xf -  && \
+    cd jansson-2.7 && \
+    ./configure && make && make check &&  make install && \
+    echo "/usr/local/lib" >> /etc/ld.so.conf.d/jansson.conf && ldconfig && \
+    rm /opt/jansson-2.7.tar.bz2 && rm -rf /opt/jansson-2.7
+
+RUN apt-get install -y unzip sox gfortran
+
+RUN cd /opt && \
+    git clone https://github.com/kaldi-asr/kaldi && \
+    cd /opt/kaldi/tools && \
+    ./extras/install_mkl.sh && \
+    make && \
+    ./install_portaudio.sh && \
+    cd /opt/kaldi/src && ./configure --shared && \
+    sed -i '/-g # -O0 -DKALDI_PARANOID/c\-O3 -DNDEBUG' kaldi.mk && \
+    make depend && make && \
+    cd /opt/kaldi/src/online && make depend && make && \
+    cd /opt/kaldi/src/gst-plugin && make depend && make
+
+
+RUN cd /opt && \
+    git clone https://github.com/alumae/gst-kaldi-nnet2-online.git && \
+    cd /opt/gst-kaldi-nnet2-online/src && \
+    sed -i '/KALDI_ROOT?=\/home\/tanel\/tools\/kaldi-trunk/c\KALDI_ROOT?=\/opt\/kaldi' Makefile && \
+    make depend && make && \
+    rm -rf /opt/gst-kaldi-nnet2-online/.git/ && \
+    find /opt/gst-kaldi-nnet2-online/src/ -type f -not -name '*.so' -delete && \
+    rm -rf /opt/kaldi/.git && \
+    rm -rf /opt/kaldi/egs/ /opt/kaldi/windows/ /opt/kaldi/misc/ && \
+    find /opt/kaldi/src/ -type f -not -name '*.so' -delete && \
+    find /opt/kaldi/tools/ -type f \( -not -name '*.so' -and -not -name '*.so*' \) -delete
+
+RUN cd /opt && \
+    git clone --single-branch --branch py3 https://github.com/alumae/kaldi-gstreamer-server.git && \
+    rm -rf /opt/kaldi-gstreamer-server/.git/ && \
+    rm -rf /opt/kaldi-gstreamer-server/test/
+
+COPY start.sh stop.sh /opt/
+
+RUN chmod +x /opt/start.sh && \
+    chmod +x /opt/stop.sh 
+
+RUN pip install futures
+
+WORKDIR /opt
